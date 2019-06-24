@@ -17,3 +17,8 @@
 LB：10w请求。防止用户重复抽奖：屏蔽1min内同一用户的多次请求。拦截后续流量：前1w请求抽完奖后，其他请求直接返回。抽奖服务开奖完毕，更新zk/redis状态，LB得到状态后拦截返回抽奖结束。
 web server：2w请求。tomcat每个请求都给独立线程处理，常200-500，需要压测调参。集群。 mysql -》redis：记录奖品余额。
 发放礼品限流削峰：MQ。
+
+6.扫码登录
+网页端+网页服务器：1.用户打开登录网页，向服务器发获取登录二维码的请求。2.服务器受到请求，生成随机uuid，放入redis，并设置expire time，过期后用户需要刷新重新获取二维码。根据uuid+公司验证字符串，通过genCharCode()接口，生成二维码图片，将图片+uuid返回browser。3.browser收到图片+uuid，每隔1s向server发请求，查看该uuid是否登录成功。
+手机端+手机服务器：4.扫二维码，得到uuid+公司验证信息。由于手机端已登录，根据token(加密userid)+uuid+验证信息，请求手机server。5.手机server对比验证信息，userid是否已登录，返回ack给手机端。6.手机收到ack，显示确认登录框，防止误操作。确认后，再次发请求。7.server根据uuid+userid，写入redis。
+登录成功：8.browser定期发请求时，网页server可从redis获取userid。调用login()，生成browser token，将用户信息返回browser。
